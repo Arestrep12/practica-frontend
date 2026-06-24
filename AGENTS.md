@@ -81,7 +81,7 @@ Dashboard → Proyecto → [Overview | Deployments | Settings]
 
 | Capa | Elección | Notas |
 |------|----------|-------|
-| Runtime / package manager | **Bun** | `bun install`, `bun run dev` |
+| Runtime / package manager | **npm** | `npm install`, `npm run dev` |
 | Frontend | **Vite + React** | SPA con React Router; consume backend separado |
 | Auth | Por definir (SSO corporativo recomendado) | Todo deploy atado a identidad |
 | Backend de orquestación | API propia en el monorepo o servicio separado | Encapsula AWS; la UI nunca llama AWS directo desde el browser |
@@ -311,7 +311,7 @@ Marcar en `docs/adr/` cuando se cierre cada una:
 4. Responder al usuario en **español**; código y commits pueden estar en inglés.
 5. No commitear sin pedido explícito; no incluir `.env` ni claves.
 6. Al añadir dependencias AWS o de auth, documentar variables de entorno en `.env.example` sin valores reales.
-7. Usar **Bun** para scripts (`bun run dev`, `bun install`); no cambiar a npm/pnpm sin pedido explícito.
+7. Usar **npm** para scripts (`npm run dev`, `npm install`); no cambiar de package manager sin pedido explícito.
 
 ---
 
