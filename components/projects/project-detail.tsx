@@ -5,12 +5,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
-  deploymentStatusLabels,
   runtimeLabels,
   type Deployment,
-  type DeploymentStatus,
   type Project,
 } from "@/lib/mock-projects";
+import {
+  buildRuntimeLogs,
+  runtimeStatusBucket,
+  statusFilters,
+  type RuntimeLog,
+  type RuntimeMethod,
+  type RuntimeStatusFilter,
+} from "@/lib/mock-runtime-logs";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -18,7 +24,6 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
-  Circle,
   CircleX,
   Clock,
   Copy,
@@ -37,10 +42,10 @@ import {
   Users,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DateRange } from "react-day-picker";
+import { Link } from "react-router-dom";
 
 type TabId = "overview" | "deployments" | "logs" | "settings";
 
@@ -91,12 +96,12 @@ export function ProjectDetail({ project }: { project: Project }) {
     <div className="min-h-screen bg-white text-navy">
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-6">
-          <Link href="/" className="font-display text-lg font-bold tracking-tight">
+          <Link to="/" className="font-display text-lg font-bold tracking-tight">
             IDP
           </Link>
           <ChevronRight className="size-4 text-border" strokeWidth={2} aria-hidden />
           <Link
-            href="/dashboard"
+            to="/dashboard"
             className="text-sm text-muted transition-colors hover:text-navy"
           >
             Proyectos
@@ -108,7 +113,7 @@ export function ProjectDetail({ project }: { project: Project }) {
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <Link
-          href="/dashboard"
+          to="/dashboard"
           className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-navy"
         >
           <ArrowLeft className="size-4" strokeWidth={2} aria-hidden />
@@ -301,62 +306,72 @@ function OverviewTab({
 }
 
 function DeploymentsTab({ project }: { project: Project }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    project.deployments[0]?.id ?? null,
+  );
   const selected = useMemo(
-    () => project.deployments.find((d) => d.id === selectedId) ?? null,
+    () => project.deployments.find((d) => d.id === selectedId) ?? project.deployments[0] ?? null,
     [project.deployments, selectedId],
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <ul className="lg:col-span-2 idp-radius-lg overflow-hidden rounded-lg border border-border">
-        {project.deployments.map((d, i) => (
-          <li key={d.id}>
-            <button
-              type="button"
-              onClick={() => setSelectedId(d.id)}
-              aria-current={selectedId === d.id ? "true" : undefined}
-              className={`flex w-full items-center gap-4 px-5 py-4 text-left transition-colors ${
-                i > 0 ? "border-t border-border" : ""
-              } ${selectedId === d.id ? "bg-surface" : "bg-white hover:bg-surface"}`}
-            >
-              <StatusBadge status={d.status} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-navy">{d.commitMessage}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted">
-                  <code className="font-mono">{d.commitSha}</code>
-                  <span aria-hidden>·</span>
-                  <span className="inline-flex items-center gap-1">
-                    <GitBranch className="size-3" strokeWidth={2} aria-hidden />
-                    {d.branch}
-                  </span>
-                  <span aria-hidden>·</span>
-                  <span>{d.environment}</span>
-                  <span aria-hidden>·</span>
-                  <span>{d.createdAt}</span>
-                </div>
-              </div>
-              <ChevronRight
-                className={`size-4 shrink-0 transition-colors ${
-                  selectedId === d.id ? "text-navy" : "text-border"
-                }`}
-                strokeWidth={2}
-                aria-hidden
-              />
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-6">
+      {selected && <DeploymentDetail deployment={selected} />}
 
-      <div className="lg:col-span-1">
-        {selected ? (
-          <DeploymentDetail deployment={selected} />
-        ) : (
-          <div className="idp-radius-lg rounded-lg border border-dashed border-border bg-surface/50 p-8 text-center text-sm text-muted">
-            Selecciona un deployment para ver su detalle y logs.
+      <section>
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-display text-lg font-bold text-navy">
+              Historial de deployments
+            </h2>
+            <p className="text-sm text-muted">
+              Selecciona un deployment para inspeccionar metadata y logs completos.
+            </p>
           </div>
-        )}
-      </div>
+          <span className="text-xs font-medium uppercase tracking-widest text-muted">
+            {project.deployments.length} eventos
+          </span>
+        </div>
+
+        <ul className="idp-radius-lg overflow-hidden rounded-lg border border-border">
+          {project.deployments.map((d, i) => (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(d.id)}
+                aria-current={selected?.id === d.id ? "true" : undefined}
+                className={`flex w-full items-center gap-4 px-5 py-4 text-left transition-colors ${
+                  i > 0 ? "border-t border-border" : ""
+                } ${selected?.id === d.id ? "bg-surface" : "bg-white hover:bg-surface"}`}
+              >
+                <StatusBadge status={d.status} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-navy">{d.commitMessage}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted">
+                    <code className="font-mono">{d.commitSha}</code>
+                    <span aria-hidden>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <GitBranch className="size-3" strokeWidth={2} aria-hidden />
+                      {d.branch}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>{d.environment}</span>
+                    <span aria-hidden>·</span>
+                    <span>{d.createdAt}</span>
+                  </div>
+                </div>
+                <ChevronRight
+                  className={`size-4 shrink-0 transition-colors ${
+                    selected?.id === d.id ? "text-navy" : "text-border"
+                  }`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
@@ -365,55 +380,86 @@ function DeploymentDetail({ deployment }: { deployment: Deployment }) {
   const logs = useMemo(() => buildMockLogs(deployment), [deployment]);
 
   return (
-    <div className="idp-radius-lg rounded-lg border border-border bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-base font-bold text-navy">Deployment</h3>
-        <StatusBadge status={deployment.status} />
+    <section className="idp-radius-lg rounded-lg border border-border bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display text-xl font-bold text-navy">Deployment</h2>
+            <StatusBadge status={deployment.status} />
+          </div>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            {deployment.commitMessage}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2 text-sm text-muted">
+          <Clock className="size-4" strokeWidth={2} aria-hidden />
+          <span className="font-medium text-navy">{formatDuration(deployment.durationMs)}</span>
+        </div>
       </div>
 
-      <dl className="mt-4 space-y-3 text-sm">
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted">ID</dt>
-          <dd className="flex items-center gap-1">
-            <code className="font-mono text-xs text-navy">{deployment.id}</code>
+      <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-widest text-muted">ID</dt>
+          <dd className="mt-1 flex items-center gap-1">
+            <code className="truncate font-mono text-sm text-navy">{deployment.id}</code>
             <CopyButton value={deployment.id} label="ID del deployment" />
           </dd>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted">Commit</dt>
-          <dd className="flex items-center gap-1">
-            <code className="font-mono text-xs text-navy">{deployment.commitSha}</code>
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-widest text-muted">Commit</dt>
+          <dd className="mt-1 flex items-center gap-1">
+            <code className="truncate font-mono text-sm text-navy">{deployment.commitSha}</code>
             <CopyButton value={deployment.commitSha} label="commit SHA" />
           </dd>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted">Entorno</dt>
-          <dd className="text-navy">{deployment.environment}</dd>
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-widest text-muted">Entorno</dt>
+          <dd className="mt-1 truncate text-sm font-medium text-navy">
+            {deployment.environment}
+          </dd>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted">Autor</dt>
-          <dd className="text-navy">{deployment.author}</dd>
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-widest text-muted">Autor</dt>
+          <dd className="mt-1 truncate text-sm font-medium text-navy">{deployment.author}</dd>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted">Duración</dt>
-          <dd className="inline-flex items-center gap-1 text-navy">
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <dt className="text-xs font-semibold uppercase tracking-widest text-muted">Duración</dt>
+          <dd className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-navy">
             <Clock className="size-3.5 text-muted" strokeWidth={2} aria-hidden />
             {formatDuration(deployment.durationMs)}
           </dd>
         </div>
       </dl>
 
-      <div className="mt-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted">Logs</p>
-        <pre className="mt-2 max-h-64 overflow-auto idp-radius-md rounded-md bg-navy-deep p-3 font-mono text-xs leading-relaxed">
-          {logs.map((line, i) => (
-            <div key={i} className={logLineClass(line)}>
-              {line}
-            </div>
-          ))}
-        </pre>
+      <div className="mt-6">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Terminal className="size-4 text-muted" strokeWidth={2} aria-hidden />
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
+              Logs
+            </h3>
+          </div>
+          <span className="font-mono text-xs text-muted">{logs.length} líneas</span>
+        </div>
+
+        <div className="idp-radius-lg overflow-hidden rounded-lg border border-border bg-white">
+          <div className="flex h-10 items-center justify-end border-b border-border bg-surface px-4">
+            <code className="truncate font-mono text-xs text-muted">
+              {deployment.id}
+            </code>
+          </div>
+
+          <pre className="max-h-[26rem] overflow-auto bg-white p-4 font-mono text-[0.82rem] leading-6 text-navy sm:p-5 sm:text-sm">
+            <code className="block min-w-max">
+              {logs.map((line, i) => (
+                <LogTerminalLine key={`${deployment.id}-${i}`} line={line} />
+              ))}
+            </code>
+          </pre>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -441,29 +487,22 @@ function parseLog(line: string): ParsedLog {
   return { time, message, level };
 }
 
-function logLineClass(line: string): string {
-  const { level } = parseLog(line);
-  if (level === "error") return "text-red-400";
-  if (level === "success") return "text-emerald-300";
-  return "text-blue-light/90";
-}
+function LogTerminalLine({ line }: { line: string }) {
+  const { time, message, level } = parseLog(line);
+  const messageClass =
+    level === "error"
+      ? "text-red-700"
+      : level === "success"
+        ? "text-emerald-700"
+        : "text-navy";
 
-function LogLevelIcon({ level }: { level: LogLevel }) {
-  if (level === "success") {
-    return <Check className="size-4 shrink-0 text-emerald-600" strokeWidth={2.5} aria-label="Éxito" />;
-  }
-  if (level === "error") {
-    return <CircleX className="size-4 shrink-0 text-red-500" strokeWidth={2} aria-label="Error" />;
-  }
   return (
-    <Circle className="size-4 shrink-0 fill-white text-muted" strokeWidth={2} aria-label="Información" />
+    <span className="block whitespace-pre">
+      {time && <span className="text-blue-accent">[{time}]</span>}
+      {time && " "}
+      <span className={messageClass}>{message}</span>
+    </span>
   );
-}
-
-function statusToLevel(status: DeploymentStatus): LogLevel {
-  if (status === "active") return "success";
-  if (status === "error") return "error";
-  return "info";
 }
 
 type LogFilter = { range?: DateRange; timeFrom: string; timeTo: string };
@@ -481,11 +520,11 @@ function combineDateTime(day: Date, time: string, fallback: "start" | "end"): nu
   return d.getTime();
 }
 
-function matchesFilter(deployment: Deployment, filter: LogFilter): boolean {
+function matchesRuntimeLogFilter(log: RuntimeLog, filter: LogFilter): boolean {
   const { range, timeFrom, timeTo } = filter;
   if (!range?.from && !range?.to && !timeFrom && !timeTo) return true;
 
-  const t = new Date(deployment.timestamp).getTime();
+  const t = new Date(log.timestamp).getTime();
   const fromDay = range?.from;
   const toDay = range?.to ?? range?.from;
 
@@ -510,31 +549,86 @@ function filterSummary(filter: LogFilter): string {
   return parts.join(" · ");
 }
 
+function matchesStatusFilter(log: RuntimeLog, filter: RuntimeStatusFilter): boolean {
+  return filter === "all" || runtimeStatusBucket(log.statusCode) === filter;
+}
+
+function statusCodeClass(statusCode: RuntimeLog["statusCode"]): string {
+  if (statusCode >= 500) return "border-red-200 bg-red-50 text-red-700";
+  if (statusCode >= 400) return "border-amber-200 bg-amber-50 text-amber-700";
+  if (statusCode >= 300) return "border-blue-light bg-blue-light text-blue-accent";
+  return "border-emerald-200 bg-emerald-50 text-emerald-700";
+}
+
+function methodClass(method: RuntimeMethod): string {
+  if (method === "POST") return "text-blue-accent";
+  if (method === "PUT" || method === "PATCH") return "text-amber-700";
+  if (method === "DELETE") return "text-red-700";
+  return "text-navy";
+}
+
+function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+  return sorted[index];
+}
+
 function LogsTab({ project }: { project: Project }) {
   const [filter, setFilter] = useState<LogFilter>(emptyFilter);
+  const [statusFilter, setStatusFilter] = useState<RuntimeStatusFilter>("all");
   const isFiltered = Boolean(filter.range?.from || filter.timeFrom || filter.timeTo);
 
-  const filteredDeployments = useMemo(
-    () => project.deployments.filter((d) => matchesFilter(d, filter)),
-    [project.deployments, filter],
+  const runtimeLogs = useMemo(() => buildRuntimeLogs(project), [project]);
+
+  const filteredLogs = useMemo(
+    () =>
+      runtimeLogs.filter(
+        (log) => matchesRuntimeLogFilter(log, filter) && matchesStatusFilter(log, statusFilter),
+      ),
+    [filter, runtimeLogs, statusFilter],
   );
-  const hasLive = filteredDeployments.some((d) => d.status === "active");
+
+  const metrics = useMemo(() => {
+    const total = filteredLogs.length;
+    const errors = filteredLogs.filter((log) => log.statusCode >= 500).length;
+    const warning = filteredLogs.filter(
+      (log) => log.statusCode >= 400 && log.statusCode < 500,
+    ).length;
+    const ok = filteredLogs.filter((log) => log.statusCode < 400).length;
+    const p95 = percentile(
+      filteredLogs.map((log) => log.latencyMs),
+      95,
+    );
+
+    return {
+      total,
+      ok,
+      warning,
+      errors,
+      errorRate: total === 0 ? 0 : Math.round((errors / total) * 100),
+      p95,
+    };
+  }, [filteredLogs]);
 
   return (
-    <section className="idp-radius-lg rounded-lg border border-border bg-white p-6">
+    <section className="idp-radius-lg rounded-lg border border-border bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Terminal className="size-4 text-muted" strokeWidth={2} aria-hidden />
-          <h2 className="font-display text-lg font-bold text-navy">Logs</h2>
-          {hasLive && (
+        <div>
+          <div className="flex items-center gap-2">
+            <Terminal className="size-4 text-muted" strokeWidth={2} aria-hidden />
+            <h2 className="font-display text-lg font-bold text-navy">Logs de aplicación</h2>
             <span className="inline-flex items-center gap-1.5 idp-radius-md rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-              <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden />
-              En vivo
+              <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+              Mock runtime
             </span>
-          )}
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            Tráfico runtime de ejemplo para {project.url}: códigos HTTP, latencia y origen.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <DateTimeFilter value={filter} onChange={setFilter} />
           <Button variant="outline" size="sm">
             <RotateCw aria-hidden />
@@ -543,58 +637,116 @@ function LogsTab({ project }: { project: Project }) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-xs text-muted">
-        <Filter className="size-3" strokeWidth={2} aria-hidden />
-        <span>
-          {filteredDeployments.length}{" "}
-          {filteredDeployments.length === 1 ? "evento" : "eventos"}
-          {isFiltered ? " en el rango seleccionado" : " en total"}
-        </span>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="idp-radius-md rounded-md border border-border bg-surface px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted">Requests</p>
+          <p className="mt-1 font-display text-2xl font-bold text-navy">{metrics.total}</p>
+        </div>
+        <div className="idp-radius-md rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">2xx/3xx</p>
+          <p className="mt-1 font-display text-2xl font-bold text-emerald-700">{metrics.ok}</p>
+        </div>
+        <div className="idp-radius-md rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">4xx</p>
+          <p className="mt-1 font-display text-2xl font-bold text-amber-700">{metrics.warning}</p>
+        </div>
+        <div className="idp-radius-md rounded-md border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-red-700">5xx / p95</p>
+          <p className="mt-1 font-display text-2xl font-bold text-red-700">
+            {metrics.errors}
+            <span className="ml-2 align-middle font-mono text-sm font-medium text-muted">
+              {metrics.p95}ms
+            </span>
+          </p>
+        </div>
       </div>
 
-      {filteredDeployments.length === 0 ? (
+      <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <Filter className="size-3" strokeWidth={2} aria-hidden />
+          <span>
+            {filteredLogs.length} {filteredLogs.length === 1 ? "evento" : "eventos"}
+            {isFiltered ? " en el rango seleccionado" : " en la ventana actual"} ·{" "}
+            {metrics.errorRate}% error rate
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2" aria-label="Filtrar por código HTTP">
+          {statusFilters.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setStatusFilter(item.id)}
+              aria-pressed={statusFilter === item.id}
+              className={`idp-radius-md rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                statusFilter === item.id
+                  ? "border-navy bg-navy text-white"
+                  : "border-border bg-white text-muted hover:bg-surface hover:text-navy"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredLogs.length === 0 ? (
         <div className="mt-4 idp-radius-md rounded-md border border-dashed border-border bg-surface/50 px-4 py-10 text-center text-sm text-muted">
-          No hay deployments en el rango de fecha y hora seleccionado.
+          No hay logs HTTP en el rango y filtro seleccionados.
         </div>
       ) : (
-        <ul className="mt-4 max-h-[28rem] overflow-auto idp-radius-md rounded-md border border-border">
-          {filteredDeployments.map((d, i) => {
-            const date = new Date(d.timestamp);
-            return (
-              <li
-                key={d.id}
-                className={`flex items-center gap-3 bg-white px-4 py-3 ${
-                  i > 0 ? "border-t border-border" : ""
-                }`}
-              >
-                <LogLevelIcon level={statusToLevel(d.status)} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-navy">{d.commitMessage}</p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
-                    <code className="font-mono">{d.commitSha}</code>
-                    <span aria-hidden>·</span>
-                    <span>{d.environment}</span>
-                    <span aria-hidden>·</span>
-                    <span>{deploymentStatusLabels[d.status]}</span>
-                  </div>
-                </div>
-                <time
-                  dateTime={d.timestamp}
-                  className="shrink-0 text-right font-mono text-xs tabular-nums text-muted"
-                >
-                  {format(date, "d MMM", { locale: es })}
-                  <br />
-                  {format(date, "HH:mm")}
-                </time>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-4 idp-radius-lg overflow-hidden rounded-lg border border-border">
+          <div className="grid grid-cols-[5rem_5rem_minmax(14rem,1fr)_5rem_6rem_7rem] gap-3 border-b border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted">
+            <span>Hora</span>
+            <span>Método</span>
+            <span>Ruta</span>
+            <span>Status</span>
+            <span>Latencia</span>
+            <span>Origen</span>
+          </div>
+
+          <ul className="max-h-[32rem] overflow-auto bg-white">
+            {filteredLogs.map((log, i) => {
+              const date = new Date(log.timestamp);
+
+              return (
+                <li key={log.id} className={i > 0 ? "border-t border-border" : ""}>
+                  <Link
+                    to={`/projects/${project.id}/logs/${log.id}`}
+                    className="grid min-w-[48rem] grid-cols-[5rem_5rem_minmax(14rem,1fr)_5rem_6rem_7rem] gap-3 px-4 py-3 font-mono text-xs transition-colors hover:bg-surface"
+                  >
+                    <time
+                      dateTime={log.timestamp}
+                      className="tabular-nums text-muted"
+                      title={format(date, "d MMM yyyy HH:mm:ss", { locale: es })}
+                    >
+                      {format(date, "HH:mm:ss")}
+                    </time>
+                    <span className={`font-semibold ${methodClass(log.method)}`}>{log.method}</span>
+                    <span className="truncate text-navy" title={log.path}>
+                      {log.path}
+                    </span>
+                    <span
+                      className={`inline-flex w-fit min-w-12 justify-center rounded border px-2 py-0.5 font-semibold ${statusCodeClass(
+                        log.statusCode,
+                      )}`}
+                    >
+                      {log.statusCode}
+                    </span>
+                    <span className="tabular-nums text-navy">{log.latencyMs}ms</span>
+                    <span className="truncate text-muted" title={`${log.source} · ${log.traceId}`}>
+                      {log.source}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </section>
   );
 }
-
 function DateTimeFilter({
   value,
   onChange,
@@ -606,12 +758,14 @@ function DateTimeFilter({
   const [draft, setDraft] = useState<LogFilter>(value);
   const isActive = Boolean(value.range?.from || value.timeFrom || value.timeTo);
 
-  useEffect(() => {
-    if (open) setDraft(value);
-  }, [open, value]);
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) setDraft(value);
+        setOpen(nextOpen);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className={isActive ? "border-blue-accent" : undefined}>
           <CalendarDays aria-hidden />
@@ -850,11 +1004,9 @@ function DeleteProjectModal({
   onClose: () => void;
 }) {
   const [confirmText, setConfirmText] = useState("");
-  const [mounted, setMounted] = useState(false);
   const canDelete = confirmText === project.name;
 
   useEffect(() => {
-    setMounted(true);
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -865,8 +1017,6 @@ function DeleteProjectModal({
       document.body.style.overflow = "";
     };
   }, [onClose]);
-
-  if (!mounted) return null;
 
   return createPortal(
     <div
