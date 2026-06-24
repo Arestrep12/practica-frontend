@@ -215,7 +215,7 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 - Secretos solo vía almacén (Secrets Manager / SSM); nunca en logs ni en respuestas API completas.
 - Principio de mínimo privilegio en roles IAM del orchestrator (un rol por acción, no `AdministratorAccess`).
 - Auditoría: quién desplegó qué y cuándo (retención según política interna).
-- Validar entradas en servidor (Zod o equivalente) en cada Server Action y route handler.
+- Validar entradas en servidor (Zod o equivalente) en cada endpoint o handler del backend.
 
 ---
 
@@ -227,7 +227,7 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 ├── src/                   # Entrada Vite, router y estilos globales
 ├── components/            # UI reutilizable
 ├── lib/                   # Clientes API, utilidades, tipos compartidos
-├── server/                # Lógica de orquestación (si no está en app/api)
+├── server/                # Lógica de orquestación si vive en este monorepo
 ├── infra/                 # CDK/Terraform para la plataforma (no por proyecto usuario)
 └── docs/                  # Decisiones de arquitectura (ADR) opcional
 ```
