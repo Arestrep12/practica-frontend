@@ -3,8 +3,8 @@
 import { ProjectCard } from "@/components/dashboard/project-card";
 import { mockProjects } from "@/lib/mock-projects";
 import { Filter, LayoutGrid, List, Rocket, Search } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 type ViewMode = "grid" | "list";
 type SortOption = "activity" | "name";
@@ -35,7 +35,7 @@ export function DashboardPage() {
     <div className="min-h-screen bg-white text-navy">
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-6xl items-center px-6">
-          <Link href="/" className="font-display text-lg font-bold tracking-tight">
+          <Link to="/" className="font-display text-lg font-bold tracking-tight">
             IDP
           </Link>
         </div>

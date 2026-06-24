@@ -7,7 +7,7 @@ import {
   ThumbsUp,
   TriangleAlert,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 function StatusIndicator({ status }: { status: Project["status"] }) {
   if (status === "active") {
@@ -68,7 +68,7 @@ export function ProjectCard({ project }: { project: Project }) {
         </div>
         <div className="min-w-0 flex-1 pl-1">
           <Link
-            href={`/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="block truncate font-semibold text-navy transition-colors before:absolute before:inset-0 before:z-0 before:content-[''] group-hover:text-blue-accent"
           >
             {project.name}

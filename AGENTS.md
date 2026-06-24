@@ -82,7 +82,7 @@ Dashboard → Proyecto → [Overview | Deployments | Settings]
 | Capa | Elección | Notas |
 |------|----------|-------|
 | Runtime / package manager | **Bun** | `bun install`, `bun run dev` |
-| Frontend / BFF | **Next.js** (App Router) | UI + API routes / Server Actions |
+| Frontend | **Vite + React** | SPA con React Router; consume backend separado |
 | Auth | Por definir (SSO corporativo recomendado) | Todo deploy atado a identidad |
 | Backend de orquestación | API propia en el monorepo o servicio separado | Encapsula AWS; la UI nunca llama AWS directo desde el browser |
 | Infra objetivo | **AWS** | ECS/Fargate, Lambda, S3+CloudFront, ALB — según tipo de artefacto |
@@ -95,7 +95,7 @@ El backend de esta plataforma no debe modelarse como un “macro servidor” don
 
 | Plano | Responsabilidad | Ejemplos |
 |-------|-----------------|----------|
-| **Control Plane** | Plataforma interna que recibe intención de usuario, valida permisos, guarda estado y orquesta deployments | Next.js/BFF, API de orquestación, base de datos, workers, auditoría |
+| **Control Plane** | Plataforma interna que recibe intención de usuario, valida permisos, guarda estado y orquesta deployments | Frontend Vite, API de orquestación, base de datos, workers, auditoría |
 | **Runtime Plane** | Recursos AWS donde corren los productos internos publicados | S3+CloudFront, ECS Fargate, Lambda, ALB, Route 53, CloudWatch |
 
 La plataforma compartida es el **Control Plane**. Los proyectos publicados deben tener recursos de ejecución propios o lógicamente aislados según el `RuntimeProfile`. Por ejemplo: un cluster ECS puede ser compartido, pero cada proyecto debe tener su propio ECS Service, Task Definition, Target Group, Log Group y permisos mínimos.
@@ -105,8 +105,8 @@ No usar la consola o wizard de AWS como mecanismo operativo de deploy. AWS se de
 | Necesidad | Tecnología recomendada | Notas |
 |-----------|------------------------|-------|
 | Lenguaje principal | **TypeScript** | Mismo lenguaje para UI, backend e IaC si se usa CDK |
-| Backend API / Orchestrator | Node.js + TypeScript | Puede empezar en `app/api` o `server/`; evolucionar a servicio separado si crece |
-| Framework backend | Hono, Fastify, NestJS o Route Handlers de Next.js | Elegir uno; evitar duplicar patrones |
+| Backend API / Orchestrator | Node.js + TypeScript | Servicio separado del frontend; puede vivir en `server/` si el monorepo lo requiere |
+| Framework backend | Hono, Fastify o NestJS | Elegir uno; evitar duplicar patrones |
 | Base de datos | PostgreSQL en RDS/Aurora | Recomendado para relaciones, auditoría, historial y RBAC |
 | Workflows de deploy | AWS Step Functions | Coordina jobs largos: build, provisionamiento, publicación, rollback |
 | Cola/eventos | SQS + EventBridge | Para desacoplar tareas, retries y eventos internos |
@@ -161,7 +161,7 @@ Para el MVP, preferir: **Control Plane compartido + Runtime Plane con recursos p
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Next.js (UI + BFF)                                         │
+│  Vite + React (UI)                                          │
 │  - Dashboard → Proyecto → Deployments / Settings            │
 │  - Un solo flujo de alta y de redeploy                      │
 │  - (Futuro) CLI opcional sobre la misma API REST            │
@@ -223,8 +223,8 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 
 ```
 /
-├── AGENTS.md              # Este archivo (+ reglas Next.js 16 arriba)
-├── app/                   # Next.js App Router (páginas y layouts)
+├── AGENTS.md              # Este archivo (+ reglas del frontend Vite arriba)
+├── src/                   # Entrada Vite, router y estilos globales
 ├── components/            # UI reutilizable
 ├── lib/                   # Clientes API, utilidades, tipos compartidos
 ├── server/                # Lógica de orquestación (si no está en app/api)
@@ -236,7 +236,7 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 
 - TypeScript estricto; sin `any` salvo justificación en comentario.
 - Componentes React funcionales; hooks para lógica reutilizable.
-- Preferir **Server Components** para datos; mutaciones vía Server Actions o API routes.
+- Consumir datos desde el backend de orquestación; mutaciones vía API del backend.
 - Nombres en inglés en código; copy de UI en español.
 - Cambios pequeños y enfocados; no expandir alcance a “creación de apps”.
 
@@ -260,7 +260,7 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 
 ### Runtimes sugeridos para MVP (orden sugerido)
 
-1. **Sitio estático** — build Next/export o artefacto → S3 + CloudFront.
+1. **Sitio estático** — build/export o artefacto → S3 + CloudFront.
 2. **Contenedor** — imagen en ECR → ECS Fargate detrás de ALB.
 3. **Función** — zip o imagen → Lambda (para agentes ligeros o webhooks).
 

@@ -2,7 +2,6 @@
 
 import { HeroCliAnimation } from "@/components/landing/hero-cli-animation";
 import { ProductShowcase } from "@/components/landing/previews/product-showcase";
-import Link from "next/link";
 import {
   useEffect,
   useRef,
@@ -10,6 +9,7 @@ import {
   type ElementType,
   type ReactNode,
 } from "react";
+import { Link } from "react-router-dom";
 
 const features = [
   {
@@ -89,7 +89,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-white text-navy">
       <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="font-display text-lg font-bold tracking-tight">
+          <Link to="/" className="font-display text-lg font-bold tracking-tight">
             IDP
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-muted md:flex">
@@ -106,12 +106,12 @@ export function LandingPage() {
               Para quién
             </a>
           </nav>
-          <Link
+          <a
             href="#acceso"
             className="idp-btn idp-radius-md rounded-md border-2 border-navy bg-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-deep"
           >
             Solicitar acceso
-          </Link>
+          </a>
         </div>
       </header>
 
@@ -152,18 +152,18 @@ export function LandingPage() {
                 className="idp-load-in mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start"
                 style={{ "--idp-delay": "0.35s" } as React.CSSProperties}
               >
-                <Link
+                <a
                   href="#acceso"
                   className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-navy px-8 py-4 text-sm font-bold uppercase tracking-wider text-white hover:bg-navy-deep"
                 >
                   Empezar ahora
-                </Link>
-                <Link
+                </a>
+                <a
                   href="#interfaz"
                   className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-navy hover:bg-surface"
                 >
                   Ver la interfaz
-                </Link>
+                </a>
               </div>
             </div>
 
@@ -346,12 +346,12 @@ export function LandingPage() {
               Internal Deploy Platform — solo deploy, solo AWS interno, una experiencia
               para todos.
             </p>
-            <Link
+            <a
               href="#"
               className="idp-btn mt-10 inline-flex idp-radius-md rounded-md border-2 border-white bg-white px-10 py-4 text-sm font-bold uppercase tracking-wider text-navy hover:bg-blue-light"
             >
               Solicitar acceso
-            </Link>
+            </a>
           </Reveal>
         </div>
       </section>

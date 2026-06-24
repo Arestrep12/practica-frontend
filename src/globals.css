@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #0b1f3a;
+  --font-plex: "IBM Plex Sans";
+  --font-jakarta: "Plus Jakarta Sans";
   --navy: #0b1f3a;
   --navy-deep: #061428;
   --navy-muted: #1a3a5c;

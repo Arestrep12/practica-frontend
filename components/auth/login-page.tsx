@@ -1,14 +1,13 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 type Step = "email" | "password";
 
 export function LoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +21,7 @@ export function LoginPage() {
 
   function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    router.push("/dashboard");
+    navigate("/dashboard");
   }
 
   return (
@@ -30,7 +29,7 @@ export function LoginPage() {
       <div className="w-full max-w-[400px]">
         <div className="mb-10 flex justify-center">
           <Link
-            href="/"
+            to="/"
             className="font-display text-2xl font-bold tracking-tight text-navy"
           >
             IDP
@@ -118,12 +117,12 @@ export function LoginPage() {
             </div>
 
             <div>
-              <Link
+              <a
                 href="#"
                 className="text-sm font-medium text-blue-accent transition-colors hover:text-navy"
               >
                 ¿Has olvidado tu contraseña?
-              </Link>
+              </a>
             </div>
 
             <button
@@ -137,12 +136,12 @@ export function LoginPage() {
 
         <p className="mt-8 text-center text-sm text-muted">
           ¿No tienes una cuenta?{" "}
-          <Link
+          <a
             href="#"
             className="font-medium text-blue-accent transition-colors hover:text-navy"
           >
             Regístrate
-          </Link>
+          </a>
         </p>
       </div>
     </main>
