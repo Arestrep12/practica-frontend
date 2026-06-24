@@ -1,5 +1,7 @@
 "use client";
 
+import { HeroCliAnimation } from "@/components/landing/hero-cli-animation";
+import { ProductShowcase } from "@/components/landing/previews/product-showcase";
 import Link from "next/link";
 import {
   useEffect,
@@ -97,6 +99,9 @@ export function LandingPage() {
             <a href="#como-funciona" className="transition-colors hover:text-navy">
               Cómo funciona
             </a>
+            <a href="#interfaz" className="transition-colors hover:text-navy">
+              Interfaz
+            </a>
             <a href="#para-quien" className="transition-colors hover:text-navy">
               Para quién
             </a>
@@ -118,40 +123,56 @@ export function LandingPage() {
           <div className="idp-hero-blob idp-hero-blob--c" />
         </div>
 
-        <div className="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-6xl flex-col items-center px-6 pb-20 pt-20 text-center md:min-h-[calc(100svh-4rem)] md:pt-28">
-          <div className="flex flex-1 flex-col items-center justify-center">
-            <h1
-              className="idp-load-in font-display max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-navy md:text-6xl lg:text-7xl"
-              style={{ "--idp-delay": "0.05s" } as React.CSSProperties}
-            >
-              Haz shipping rápido y sencillo de tus ideas
-            </h1>
+        <div className="relative mx-auto max-w-6xl px-6 pb-16 pt-16 md:pb-24 md:pt-20 lg:pt-24">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <div className="text-center lg:text-left">
+              <p
+                className="idp-load-in text-xs font-bold uppercase tracking-[0.25em] text-blue-accent"
+                style={{ "--idp-delay": "0s" } as React.CSSProperties}
+              >
+                Internal Deploy Platform
+              </p>
 
-            <p
-              className="idp-load-in mt-8 max-w-2xl text-lg leading-relaxed text-muted md:text-xl"
-              style={{ "--idp-delay": "0.2s" } as React.CSSProperties}
-            >
-              Una experiencia única para volver real tu creatividad: conecta ya
-              tus ideas, publica y comparte tu visión con los demás.
-            </p>
-          </div>
+              <h1
+                className="idp-load-in font-display mt-4 max-w-xl text-4xl font-bold leading-[1.05] tracking-tight text-navy md:text-5xl lg:text-6xl"
+                style={{ "--idp-delay": "0.05s" } as React.CSSProperties}
+              >
+                Haz shipping rápido y sencillo de tus ideas
+              </h1>
 
-          <div
-            className="idp-load-in mt-16 flex w-full flex-col items-center justify-center gap-4 pb-8 sm:flex-row md:mt-24 md:pb-16"
-            style={{ "--idp-delay": "0.35s" } as React.CSSProperties}
-          >
-            <Link
-              href="#acceso"
-              className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-navy px-8 py-4 text-sm font-bold uppercase tracking-wider text-white hover:bg-navy-deep"
+              <p
+                className="idp-load-in mt-6 max-w-lg text-lg leading-relaxed text-muted md:text-xl lg:mx-0 mx-auto"
+                style={{ "--idp-delay": "0.2s" } as React.CSSProperties}
+              >
+                Conecta tu repo, publica en AWS interno y obtén URL, historial y logs
+                en un dashboard claro — la misma interfaz para todo el equipo.
+              </p>
+
+              <div
+                className="idp-load-in mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start"
+                style={{ "--idp-delay": "0.35s" } as React.CSSProperties}
+              >
+                <Link
+                  href="#acceso"
+                  className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-navy px-8 py-4 text-sm font-bold uppercase tracking-wider text-white hover:bg-navy-deep"
+                >
+                  Empezar ahora
+                </Link>
+                <Link
+                  href="#interfaz"
+                  className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-navy hover:bg-surface"
+                >
+                  Ver la interfaz
+                </Link>
+              </div>
+            </div>
+
+            <div
+              className="idp-load-in flex w-full min-w-0 items-center justify-center lg:justify-end"
+              style={{ "--idp-delay": "0.45s" } as React.CSSProperties}
             >
-              Empezar ahora
-            </Link>
-            <Link
-              href="#como-funciona"
-              className="idp-btn inline-flex items-center justify-center idp-radius-md rounded-md border-2 border-navy bg-white px-8 py-4 text-sm font-bold uppercase tracking-wider text-navy hover:bg-surface"
-            >
-              Ver cómo funciona
-            </Link>
+              <HeroCliAnimation />
+            </div>
           </div>
         </div>
       </section>
@@ -186,6 +207,47 @@ export function LandingPage() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section
+        id="interfaz"
+        className="border-b border-border bg-navy-deep py-24 text-white md:py-32"
+      >
+        <div className="mx-auto max-w-6xl px-6">
+          <Reveal>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-light/80">
+              Interfaz
+            </p>
+            <h2 className="font-display mt-4 max-w-2xl text-3xl font-bold leading-tight text-white md:text-5xl">
+              Lo que ves en la landing es lo que usas al publicar
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
+              Previews construidos con los mismos patrones del producto: dashboard de
+              proyectos, overview con redeploy y detalle de deployments con logs.
+            </p>
+          </Reveal>
+
+          <Reveal delay={0.12} className="mt-14 lg:mt-16">
+            <ProductShowcase />
+          </Reveal>
+
+          <Reveal delay={0.2}>
+            <ul className="idp-preview-captions mt-16 flex flex-wrap gap-x-8 gap-y-4 text-sm text-white/70 md:mt-20 lg:mt-24">
+              <li className="inline-flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
+                Estados unificados en toda la UI
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-blue-light" aria-hidden />
+                Logs solo en el detalle del deployment
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-amber-400" aria-hidden />
+                Redeploy visible desde Overview
+              </li>
+            </ul>
+          </Reveal>
         </div>
       </section>
 

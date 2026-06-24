@@ -89,6 +89,72 @@ Dashboard → Proyecto → [Overview | Deployments | Settings]
 | Estado / colas | Por definir (ej. Postgres + cola de jobs) | Historial de deploys, idempotencia |
 | IaC | CDK o Terraform en repo de plataforma | Cambios de infra revisados por PR, no clicks sueltos |
 
+### Backend y provisión de infraestructura
+
+El backend de esta plataforma no debe modelarse como un “macro servidor” donde viven todos los productos desplegados, ni como una automatización de wizards manuales de AWS. Debe separarse en dos planos:
+
+| Plano | Responsabilidad | Ejemplos |
+|-------|-----------------|----------|
+| **Control Plane** | Plataforma interna que recibe intención de usuario, valida permisos, guarda estado y orquesta deployments | Next.js/BFF, API de orquestación, base de datos, workers, auditoría |
+| **Runtime Plane** | Recursos AWS donde corren los productos internos publicados | S3+CloudFront, ECS Fargate, Lambda, ALB, Route 53, CloudWatch |
+
+La plataforma compartida es el **Control Plane**. Los proyectos publicados deben tener recursos de ejecución propios o lógicamente aislados según el `RuntimeProfile`. Por ejemplo: un cluster ECS puede ser compartido, pero cada proyecto debe tener su propio ECS Service, Task Definition, Target Group, Log Group y permisos mínimos.
+
+No usar la consola o wizard de AWS como mecanismo operativo de deploy. AWS se debe consumir mediante APIs, workflows e infraestructura como código:
+
+| Necesidad | Tecnología recomendada | Notas |
+|-----------|------------------------|-------|
+| Lenguaje principal | **TypeScript** | Mismo lenguaje para UI, backend e IaC si se usa CDK |
+| Backend API / Orchestrator | Node.js + TypeScript | Puede empezar en `app/api` o `server/`; evolucionar a servicio separado si crece |
+| Framework backend | Hono, Fastify, NestJS o Route Handlers de Next.js | Elegir uno; evitar duplicar patrones |
+| Base de datos | PostgreSQL en RDS/Aurora | Recomendado para relaciones, auditoría, historial y RBAC |
+| Workflows de deploy | AWS Step Functions | Coordina jobs largos: build, provisionamiento, publicación, rollback |
+| Cola/eventos | SQS + EventBridge | Para desacoplar tareas, retries y eventos internos |
+| Infraestructura como código | AWS CDK con TypeScript o Terraform | CDK si se prioriza TypeScript; Terraform si ya es estándar del banco |
+| SDK cloud | AWS SDK for JavaScript/TypeScript | Llamadas controladas desde servidor, nunca desde el browser |
+| Builds | AWS CodeBuild | Compila repos, genera artefactos o imágenes |
+| Contenedores | ECR + ECS Fargate + ALB | Runtime recomendado para APIs y servicios web internos |
+| Sitios estáticos | S3 + CloudFront | Primer runtime sugerido para MVP |
+| Funciones | Lambda + API Gateway o ALB | Para webhooks, agentes ligeros o procesos pequeños |
+| Logs | CloudWatch Logs | Agregar por `deploymentId`; mostrar logs crudos solo en detalle del deployment |
+| Secretos/config | Secrets Manager + SSM Parameter Store | Nunca persistir secretos en DB ni exponerlos completos en respuestas API |
+| DNS/TLS interno | Route 53 + ACM | URLs internas estables por entorno/proyecto |
+
+Flujo esperado al publicar:
+
+```
+Usuario hace clic en Publicar
+        │
+        ▼
+POST /projects/:id/deployments
+        │
+        ▼
+Deploy Orchestrator valida auth/RBAC/cuotas
+        │
+        ▼
+Crea Deployment en DB con estado Pendiente
+        │
+        ▼
+Inicia workflow en Step Functions
+        │
+        ├─ CodeBuild compila repo/artefacto
+        ├─ CDK/Terraform/SDK crea o actualiza recursos AWS
+        ├─ S3/ECS/Lambda publica la nueva versión
+        ├─ Route 53/ALB/CloudFront apunta la URL interna
+        ├─ CloudWatch expone logs por deployment
+        └─ DB marca Activo o Error
+```
+
+Modelos de aislamiento aceptados:
+
+| Modelo | Uso recomendado | Tradeoff |
+|--------|-----------------|----------|
+| Recursos base compartidos | MVP y equipos internos confiables | Menor costo y menor complejidad; requiere buena separación lógica |
+| Recursos dedicados por proyecto | Servicios con más criticidad o requisitos propios | Más aislamiento; mayor costo y administración |
+| Cuenta AWS separada por equipo/proyecto | Entornos enterprise maduros con AWS Organizations | Aislamiento fuerte; demasiado complejo para MVP |
+
+Para el MVP, preferir: **Control Plane compartido + Runtime Plane con recursos por proyecto donde importe el aislamiento**. Ejemplo: ALB y cluster ECS compartidos, pero ECS Service, Task Definition, Target Group, Log Group, variables y permisos separados por proyecto.
+
 ---
 
 ## Arquitectura de referencia
