@@ -202,7 +202,7 @@ Usar estos términos de forma consistente en tipos, tablas y UI:
 - **Environment** — instancia lógica (`staging`, `prod-interno`); no confundir con “crear app”.
 - **Release** — snapshot desplegable (commit SHA, digest de imagen, timestamp).
 - **Deployment** — intento concreto de llevar un Release a un Environment (estado, logs).
-- **RuntimeProfile** — plantilla AWS preaprobada (ej. `next-static`, `node-api`, `python-agent`).
+- **RuntimeProfile** — plantilla AWS preaprobada (MVP: `nodejs`).
 
 No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el usuario cambie explícitamente el alcance.
 
@@ -260,9 +260,7 @@ No introducir entidades tipo `AppTemplate`, `Scaffold`, `Blueprint` salvo que el
 
 ### Runtimes sugeridos para MVP (orden sugerido)
 
-1. **Sitio estático** — build/export o artefacto → S3 + CloudFront.
-2. **Contenedor** — imagen en ECR → ECS Fargate detrás de ALB.
-3. **Función** — zip o imagen → Lambda (para agentes ligeros o webhooks).
+1. **Node.js** — imagen en ECR → ECS Fargate detrás de ALB.
 
 Ampliar la lista solo con ADR o acuerdo explícito del usuario.
 

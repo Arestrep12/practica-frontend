@@ -43,7 +43,7 @@ export type Project = {
   branch: string;
   updatedAt: string;
   status: ProjectStatus;
-  runtime: string;
+  runtime: RuntimeProfile;
   environment: "staging" | "prod-interno";
   deployments: Deployment[];
   envVars: EnvVar[];
@@ -122,9 +122,11 @@ type ProjectSeed = Omit<
   Project,
   "runtime" | "environment" | "deployments" | "envVars" | "members"
 > & {
-  runtime: string;
+  runtime: RuntimeProfile;
   environment: "staging" | "prod-interno";
 };
+
+export type RuntimeProfile = "nodejs";
 
 const projectSeeds: ProjectSeed[] = [
   {
@@ -136,7 +138,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "main",
     updatedAt: "Hace 2 h",
     status: "active",
-    runtime: "python-agent",
+    runtime: "nodejs",
     environment: "prod-interno",
   },
   {
@@ -148,7 +150,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "main",
     updatedAt: "Hace 1 d",
     status: "active",
-    runtime: "node-api",
+    runtime: "nodejs",
     environment: "staging",
   },
   {
@@ -160,7 +162,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "release/2.4",
     updatedAt: "Hace 3 d",
     status: "warning",
-    runtime: "node-api",
+    runtime: "nodejs",
     environment: "prod-interno",
   },
   {
@@ -172,7 +174,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "main",
     updatedAt: "Hace 5 d",
     status: "active",
-    runtime: "next-static",
+    runtime: "nodejs",
     environment: "prod-interno",
   },
   {
@@ -184,7 +186,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "hotfix/timeout",
     updatedAt: "Hace 1 sem",
     status: "error",
-    runtime: "python-agent",
+    runtime: "nodejs",
     environment: "prod-interno",
   },
   {
@@ -196,7 +198,7 @@ const projectSeeds: ProjectSeed[] = [
     branch: "main",
     updatedAt: "Hace 2 sem",
     status: "active",
-    runtime: "next-static",
+    runtime: "nodejs",
     environment: "prod-interno",
   },
 ];
@@ -212,10 +214,8 @@ export function getProjectById(id: string): Project | undefined {
   return mockProjects.find((project) => project.id === id);
 }
 
-export const runtimeLabels: Record<string, string> = {
-  "next-static": "Sitio estático (S3 + CloudFront)",
-  "node-api": "Contenedor Node (ECS Fargate)",
-  "python-agent": "Agente Python (Lambda)",
+export const runtimeLabels: Record<RuntimeProfile, string> = {
+  nodejs: "Node.js (ECS Fargate)",
 };
 
 export const deploymentStatusLabels: Record<DeploymentStatus, string> = {

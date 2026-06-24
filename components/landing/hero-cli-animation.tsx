@@ -15,7 +15,7 @@ const script: ScriptLine[] = [
   { kind: "line", text: "─────────────────────────────────────", tone: "muted" },
   { kind: "prompt", text: "login" },
   { kind: "line", text: "✓ Sesión iniciada como maria.restrepo@company.com", tone: "success" },
-  { kind: "prompt", text: "project create agente-soporte-ia --runtime python-agent" },
+  { kind: "prompt", text: "project create agente-soporte-ia --runtime nodejs" },
   { kind: "line", text: "✓ Proyecto registrado · origen plataforma/agente-soporte-ia", tone: "success" },
   { kind: "prompt", text: "deploy --env prod-interno --branch main" },
   { kind: "line", text: "⋯ Clonando main @ 9f3a2c1", tone: "info" },
